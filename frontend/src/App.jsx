@@ -95,22 +95,12 @@ function App() {
 
   return (
     <div className="app">
-      {/* Animated floating background orbs */}
-      <div className="orb-container">
-        <div className="orb orb-1" />
-        <div className="orb orb-2" />
-        <div className="orb orb-3" />
-        <div className="orb orb-4" />
-      </div>
-
       <Header
         currentView={currentView}
         onNavigate={handleNavigate}
         systemStatus={{ ollama: ollamaStatus }}
       />
-      <main className="main-content" style={{ position: "relative", zIndex: 1 }}>
-        {renderContent()}
-      </main>
+      <main className="main-content">{renderContent()}</main>
     </div>
   );
 }

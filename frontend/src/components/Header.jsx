@@ -4,11 +4,9 @@ export default function Header({ currentView, onNavigate, systemStatus }) {
   return (
     <header className="header">
       <div className="header-left">
-        <div className="header-logo">M</div>
-        <div>
-          <div className="header-title">Multi-Agent Platform</div>
-          <div className="header-subtitle">Local LLM Orchestration</div>
-        </div>
+        <span className="header-title">Multi-Agent Platform</span>
+        <span className="header-sep">/</span>
+        <span className="header-subtitle">Dashboard</span>
       </div>
 
       <nav className="nav-tabs">
@@ -16,13 +14,13 @@ export default function Header({ currentView, onNavigate, systemStatus }) {
           className={`nav-tab ${currentView === "dashboard" ? "active" : ""}`}
           onClick={() => onNavigate("dashboard")}
         >
-          Dashboard
+          Overview
         </button>
         <button
           className={`nav-tab ${currentView === "llm" ? "active" : ""}`}
           onClick={() => onNavigate("llm")}
         >
-          LLM Queue
+          Inference
         </button>
       </nav>
 
@@ -32,7 +30,7 @@ export default function Header({ currentView, onNavigate, systemStatus }) {
         </span>
         <span
           className={`status-dot ${isHealthy ? "healthy" : "error"}`}
-          title={isHealthy ? "Ollama Connected" : "Ollama Disconnected"}
+          title={isHealthy ? "Ollama connected" : "Ollama disconnected"}
         />
       </div>
     </header>

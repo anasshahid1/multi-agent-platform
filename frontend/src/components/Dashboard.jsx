@@ -3,7 +3,6 @@ import AgentCard from "./AgentCard";
 
 export default function Dashboard({ agents, metrics, onSelectAgent, onRefresh }) {
   const running = agents.filter((a) => a.status === "running").length;
-  const idle = agents.filter((a) => a.status === "idle").length;
 
   return (
     <div>
@@ -12,12 +11,7 @@ export default function Dashboard({ agents, metrics, onSelectAgent, onRefresh })
       <div className="section-header">
         <div className="section-title">Agents</div>
         <div className="section-meta">
-          {running > 0 && (
-            <span style={{ color: "var(--accent-blue)", marginRight: 12 }}>
-              {running} running
-            </span>
-          )}
-          <span>{idle} idle</span>
+          {running > 0 ? `${running} running` : `${agents.length} idle`}
         </div>
       </div>
 
