@@ -1,4 +1,17 @@
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import {
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Shield,
+  BarChart3,
+} from "lucide-react";
 
 const AGENT_SHADES = {
   ai_times: "#3b82f6",
@@ -25,9 +38,13 @@ const PieTooltip = ({ active, payload }) => {
   );
 };
 
-function Stat({ value, label }) {
+function Stat({ value, label, icon }) {
+  const Icon = icon;
   return (
     <div className="llm-stat">
+      <div className="llm-stat-icon">
+        <Icon size={14} strokeWidth={1.5} />
+      </div>
       <div className="llm-stat-value">
         {typeof value === "number" ? value.toLocaleString() : value}
       </div>
@@ -51,7 +68,10 @@ export default function LLMMonitor({ llmStatus }) {
     <div>
       <div className="card animate-in" style={{ marginBottom: 12 }}>
         <div className="card-header">
-          <div className="card-title">Inference Scheduler</div>
+          <div className="card-title">
+            <BarChart3 size={13} strokeWidth={1.5} style={{ marginRight: 6, verticalAlign: "middle" }} />
+            Inference Scheduler
+          </div>
           <div className="llm-status-bar">
             <span className={`llm-status-indicator ${status}`}>{status}</span>
             <span style={{ fontSize: 11, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
@@ -61,22 +81,25 @@ export default function LLMMonitor({ llmStatus }) {
         </div>
 
         <div className="llm-stats-expanded">
-          <Stat value={stats.total_processed} label="Processed" />
-          <Stat value={stats.total_failed} label="Failed" />
-          <Stat value={`${stats.avg_latency_seconds}s`} label="Avg Latency" />
-          <Stat value={stats.deadlocks_prevented} label="Deadlocks" />
+          <Stat value={stats.total_processed} label="Processed" icon={CheckCircle2} />
+          <Stat value={stats.total_failed} label="Failed" icon={XCircle} />
+          <Stat value={`${stats.avg_latency_seconds}s`} label="Avg Latency" icon={Clock} />
+          <Stat value={stats.deadlocks_prevented} label="Deadlocks" icon={Shield} />
         </div>
 
         <div className="llm-stats-expanded">
-          <Stat value={stats.total_tokens || 0} label="Total Tokens" />
-          <Stat value={stats.total_input_tokens || 0} label="Input" />
-          <Stat value={stats.total_output_tokens || 0} label="Output" />
-          <Stat value={`${stats.avg_tokens_per_second || 0}`} label="Avg tok/s" />
+          <Stat value={stats.total_tokens || 0} label="Total Tokens" icon={BarChart3} />
+          <Stat value={stats.total_input_tokens || 0} label="Input" icon={BarChart3} />
+          <Stat value={stats.total_output_tokens || 0} label="Output" icon={BarChart3} />
+          <Stat value={`${stats.avg_tokens_per_second || 0}`} label="Avg tok/s" icon={Clock} />
         </div>
 
         {active_request && (
           <div className="active-request">
-            <div className="active-request-label">Processing</div>
+            <div className="active-request-label">
+              <Clock size={11} strokeWidth={2} style={{ marginRight: 4, verticalAlign: "middle" }} />
+              Processing
+            </div>
             <div className="active-request-task">{active_request.task}</div>
             <div className="active-request-meta">
               {active_request.agent_id} &middot; {active_request.elapsed_seconds}s &middot; p{active_request.priority}
@@ -85,7 +108,7 @@ export default function LLMMonitor({ llmStatus }) {
         )}
       </div>
 
-      {pieData.length > 0 && (
+      {pieData.length > 0 ? (
         <div className="card animate-in animate-in-1" style={{ marginBottom: 12 }}>
           <div className="card-title" style={{ marginBottom: 8 }}>Token Distribution</div>
           <div className="token-breakdown">
@@ -110,7 +133,7 @@ export default function LLMMonitor({ llmStatus }) {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
       <div className="card animate-in animate-in-2">
         <div className="card-header">
@@ -152,7 +175,11 @@ export default function LLMMonitor({ llmStatus }) {
             </table>
           </div>
         ) : (
-          <div className="empty-state">No inference requests yet. Trigger an agent to see activity.</div>
+          <div className="empty-state">
+            <BarChart3 size={24} strokeWidth={1} style={{ opacity: 0.3, marginBottom: 8 }} />
+            <p>No inference requests yet</p>
+            <p style={{ fontSize: 11, marginTop: 4 }}>Trigger an agent to see activity here</p>
+          </div>
         )}
       </div>
     </div>

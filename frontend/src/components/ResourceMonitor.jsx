@@ -7,16 +7,21 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { Cpu, MemoryStick, HardDrive } from "lucide-react";
 import { getSystemHistory } from "../api/client";
 
-function Gauge({ label, percent, detail }) {
+function Gauge({ label, percent, detail, icon }) {
   const level = percent > 90 ? "danger" : percent > 70 ? "warning" : "";
+  const Icon = icon;
 
   return (
     <div className="card animate-in">
       <div className="gauge-container">
         <div className="gauge-header">
-          <span className="gauge-label">{label}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Icon size={14} strokeWidth={1.5} style={{ color: "var(--text-tertiary)" }} />
+            <span className="gauge-label">{label}</span>
+          </div>
           <span className="gauge-value">{percent.toFixed(1)}%</span>
         </div>
         <div className="gauge-bar">
@@ -74,12 +79,12 @@ export default function ResourceMonitor({ metrics }) {
       </div>
 
       <div className="dashboard-grid">
-        <Gauge label="CPU" percent={cpu.percent} detail={`${cpu.cores} cores`} />
-        <Gauge label="Memory" percent={ram.percent} detail={`${ram.used_gb} / ${ram.total_gb} GB`} />
-        <Gauge label="Disk" percent={disk.percent} detail={`${disk.free_gb} GB free`} />
+        <Gauge label="CPU" icon={Cpu} percent={cpu.percent} detail={`${cpu.cores} cores`} />
+        <Gauge label="Memory" icon={MemoryStick} percent={ram.percent} detail={`${ram.used_gb} / ${ram.total_gb} GB`} />
+        <Gauge label="Disk" icon={HardDrive} percent={disk.percent} detail={`${disk.free_gb} GB free`} />
       </div>
 
-      {history.length > 2 && (
+      {history.length > 2 ? (
         <div className="card animate-in" style={{ marginBottom: 24 }}>
           <div className="card-title" style={{ marginBottom: 8 }}>Usage History</div>
           <div className="chart-container">
@@ -103,6 +108,10 @@ export default function ResourceMonitor({ metrics }) {
               </AreaChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      ) : (
+        <div className="animate-in empty-chart" style={{ marginBottom: 24 }}>
+          Collecting usage data...
         </div>
       )}
     </div>
