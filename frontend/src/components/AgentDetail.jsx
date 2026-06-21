@@ -46,44 +46,72 @@ export default function AgentDetail({ agentId, onBack }) {
 
   if (!agent) {
     return (
-      <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
-        Loading agent details...
-      </div>
+      <div className="empty-state">Loading agent details...</div>
     );
   }
+
+  const isRunning = agent.status === "running" || triggering;
 
   return (
     <div>
       <div className="detail-header">
-        <div>
-          <button className="back-btn" onClick={onBack}>
-            Back to Dashboard
-          </button>
-        </div>
+        <button className="back-btn" onClick={onBack}>
+          Back
+        </button>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div className={`agent-status ${agent.status}`}>
-            <span className={`status-dot ${agent.status === "idle" ? "healthy" : agent.status === "running" ? "warning" : "error"}`} />
+            <span
+              className={`status-dot ${
+                agent.status === "idle"
+                  ? "healthy"
+                  : agent.status === "running"
+                  ? "warning"
+                  : "error"
+              }`}
+            />
             {agent.status}
           </div>
           <button
-            className="btn btn-primary"
+            className={`btn btn-primary ${isRunning ? "running" : ""}`}
             onClick={handleTrigger}
-            disabled={triggering || agent.status === "running"}
+            disabled={isRunning}
           >
-            {triggering ? "Triggered..." : agent.status === "running" ? "Running..." : "Run Now"}
+            {triggering
+              ? "Triggered..."
+              : agent.status === "running"
+              ? "Running..."
+              : "Run Now"}
           </button>
         </div>
       </div>
 
-      <h2 style={{ fontSize: 24, marginBottom: 4 }}>{agent.name}</h2>
-      <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 24 }}>
+      <h2
+        style={{
+          fontSize: 24,
+          fontWeight: 700,
+          marginBottom: 6,
+          letterSpacing: "-0.5px",
+          animation: "fadeIn 0.4s ease-out",
+        }}
+      >
+        {agent.name}
+      </h2>
+      <p
+        style={{
+          color: "var(--text-secondary)",
+          fontSize: 14,
+          marginBottom: 28,
+          animation: "fadeIn 0.5s ease-out",
+        }}
+      >
         {agent.description}
       </p>
 
       <div className="detail-grid">
-        {/* Stats */}
-        <div className="card">
-          <div className="card-title" style={{ marginBottom: 16 }}>Run Statistics</div>
+        <div className="card glass animate-in animate-in-1">
+          <div className="card-title" style={{ marginBottom: 18 }}>
+            Run Statistics
+          </div>
           <div className="agent-meta">
             <div className="agent-meta-row">
               <span>Last Run</span>
@@ -103,10 +131,16 @@ export default function AgentDetail({ agentId, onBack }) {
             </div>
             <div className="agent-meta-row">
               <span>Status</span>
-              <span style={{
-                color: agent.last_run_status === "success" ? "var(--accent-green)" : "var(--accent-red)"
-              }}>
-                {agent.last_run_status || "-"}
+              <span>
+                {agent.last_run_status ? (
+                  <span
+                    className={`status-badge ${agent.last_run_status === "success" ? "completed" : "failed"}`}
+                  >
+                    {agent.last_run_status}
+                  </span>
+                ) : (
+                  "-"
+                )}
               </span>
             </div>
             <div className="agent-meta-row">
@@ -124,9 +158,10 @@ export default function AgentDetail({ agentId, onBack }) {
           </div>
         </div>
 
-        {/* Schedule */}
-        <div className="card">
-          <div className="card-title" style={{ marginBottom: 16 }}>Schedule</div>
+        <div className="card glass animate-in animate-in-2">
+          <div className="card-title" style={{ marginBottom: 18 }}>
+            Schedule
+          </div>
           <ScheduleEditor
             agentId={agentId}
             schedule={schedule}
@@ -135,11 +170,10 @@ export default function AgentDetail({ agentId, onBack }) {
         </div>
       </div>
 
-      {/* Logs */}
-      <div className="card">
+      <div className="card glass animate-in animate-in-3">
         <div className="card-header">
           <div className="card-title">Agent Logs</div>
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
             {logs.length} entries
           </span>
         </div>

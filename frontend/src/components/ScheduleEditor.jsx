@@ -83,22 +83,46 @@ export default function ScheduleEditor({ agentId, schedule, onSaved }) {
       )}
 
       <div className="form-group">
-        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            cursor: "pointer",
+          }}
+        >
           <input
             type="checkbox"
             checked={enabled}
             onChange={(e) => setEnabled(e.target.checked)}
+            style={{ accentColor: "var(--accent-blue)" }}
           />
-          <span className="form-label" style={{ margin: 0 }}>Enabled</span>
+          <span className="form-label" style={{ margin: 0 }}>
+            Enabled
+          </span>
         </label>
       </div>
 
-      <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+      <button
+        className="btn btn-primary"
+        onClick={handleSave}
+        disabled={saving}
+        style={{ width: "100%" }}
+      >
         {saving ? "Saving..." : "Save Schedule"}
       </button>
 
       {message && (
-        <div style={{ fontSize: 12, color: message.startsWith("Error") ? "var(--accent-red)" : "var(--accent-green)" }}>
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 500,
+            color: message.startsWith("Error")
+              ? "var(--accent-red)"
+              : "var(--accent-green)",
+            textAlign: "center",
+          }}
+        >
           {message}
         </div>
       )}

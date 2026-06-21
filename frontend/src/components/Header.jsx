@@ -4,11 +4,10 @@ export default function Header({ currentView, onNavigate, systemStatus }) {
   return (
     <header className="header">
       <div className="header-left">
+        <div className="header-logo">M</div>
         <div>
           <div className="header-title">Multi-Agent Platform</div>
-          <div className="header-subtitle">
-            Local LLM Orchestration Dashboard
-          </div>
+          <div className="header-subtitle">Local LLM Orchestration</div>
         </div>
       </div>
 
@@ -28,7 +27,7 @@ export default function Header({ currentView, onNavigate, systemStatus }) {
       </nav>
 
       <div className="header-right">
-        <span className="header-subtitle">
+        <span className="header-model-badge">
           {systemStatus?.ollama?.model || "qwen3:8b"}
         </span>
         <span

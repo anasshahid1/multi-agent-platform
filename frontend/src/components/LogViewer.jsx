@@ -2,7 +2,7 @@ export default function LogViewer({ logs }) {
   if (!logs || logs.length === 0) {
     return (
       <div className="log-container">
-        <div style={{ textAlign: "center", padding: 20, color: "var(--text-muted)" }}>
+        <div className="empty-state">
           No logs yet. Run the agent to generate logs.
         </div>
       </div>

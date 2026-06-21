@@ -6,13 +6,13 @@ export default function LLMMonitor({ llmStatus }) {
 
   return (
     <div>
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card glass animate-in" style={{ marginBottom: 16 }}>
         <div className="card-header">
           <div className="card-title">LLM Scheduler</div>
           <div className="llm-status-bar">
             <span className={`llm-status-indicator ${status}`}>{status}</span>
-            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-              Queue: {queue_depth}/{max_queue_size}
+            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+              Queue: {queue_depth} / {max_queue_size}
             </span>
           </div>
         </div>
@@ -37,37 +37,28 @@ export default function LLMMonitor({ llmStatus }) {
         </div>
 
         {active_request && (
-          <div
-            style={{
-              background: "var(--bg-primary)",
-              borderRadius: 8,
-              padding: 12,
-              marginBottom: 12,
-            }}
-          >
-            <div style={{ fontSize: 12, color: "var(--accent-blue)", fontWeight: 600, marginBottom: 4 }}>
-              Active Request
-            </div>
-            <div style={{ fontSize: 13, color: "var(--text-primary)" }}>
-              {active_request.task}
-            </div>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-              Agent: {active_request.agent_id} | Elapsed: {active_request.elapsed_seconds}s | Priority: {active_request.priority}
+          <div className="active-request">
+            <div className="active-request-label">Active Request</div>
+            <div className="active-request-task">{active_request.task}</div>
+            <div className="active-request-meta">
+              Agent: {active_request.agent_id} &nbsp;&bull;&nbsp; Elapsed:{" "}
+              {active_request.elapsed_seconds}s &nbsp;&bull;&nbsp; Priority:{" "}
+              {active_request.priority}
             </div>
           </div>
         )}
       </div>
 
-      <div className="card">
+      <div className="card glass animate-in animate-in-2">
         <div className="card-header">
           <div className="card-title">Request History</div>
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
             Last {history?.length || 0} requests
           </span>
         </div>
 
         {history && history.length > 0 ? (
-          <div style={{ maxHeight: 400, overflowY: "auto" }}>
+          <div style={{ maxHeight: 450, overflowY: "auto" }}>
             <table className="history-table">
               <thead>
                 <tr>
@@ -82,7 +73,7 @@ export default function LLMMonitor({ llmStatus }) {
               <tbody>
                 {[...history].reverse().map((item, i) => (
                   <tr key={i}>
-                    <td>
+                    <td style={{ fontSize: 11, color: "var(--text-muted)" }}>
                       {item.completed_at
                         ? new Date(item.completed_at).toLocaleTimeString([], {
                             hour: "2-digit",
@@ -91,19 +82,21 @@ export default function LLMMonitor({ llmStatus }) {
                           })
                         : "-"}
                     </td>
-                    <td>{item.agent_id}</td>
-                    <td style={{ maxWidth: 250, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <td style={{ fontWeight: 500 }}>{item.agent_id}</td>
+                    <td
+                      style={{
+                        maxWidth: 260,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
                       {item.task}
                     </td>
                     <td>{item.duration_seconds}s</td>
                     <td>{item.tokens}</td>
                     <td>
-                      <span
-                        style={{
-                          color: item.status === "completed" ? "var(--accent-green)" : "var(--accent-red)",
-                          fontWeight: 600,
-                        }}
-                      >
+                      <span className={`status-badge ${item.status}`}>
                         {item.status}
                       </span>
                     </td>
@@ -113,7 +106,7 @@ export default function LLMMonitor({ llmStatus }) {
             </table>
           </div>
         ) : (
-          <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
+          <div className="empty-state">
             No LLM requests yet. Trigger an agent to see activity here.
           </div>
         )}
