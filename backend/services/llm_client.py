@@ -63,11 +63,31 @@ class LLMClient:
             response.raise_for_status()
             data = response.json()
 
+        # Extract full tokenization details from Ollama response
+        output_tokens = data.get("eval_count", 0)
+        input_tokens = data.get("prompt_eval_count", 0)
+        eval_duration_ns = data.get("eval_duration", 0)
+        prompt_eval_duration_ns = data.get("prompt_eval_duration", 0)
+        total_duration_ns = data.get("total_duration", 0)
+
+        eval_duration_s = eval_duration_ns / 1_000_000_000 if eval_duration_ns else 0
+        tokens_per_second = round(
+            output_tokens / eval_duration_s, 2
+        ) if eval_duration_s > 0 else 0
+
         return {
             "response": data.get("response", ""),
-            "tokens": data.get("eval_count", 0),
+            "tokens": output_tokens,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": input_tokens + output_tokens,
+            "tokens_per_second": tokens_per_second,
+            "prompt_eval_seconds": round(
+                prompt_eval_duration_ns / 1_000_000_000, 2
+            ) if prompt_eval_duration_ns else 0,
+            "generation_seconds": round(eval_duration_s, 2),
             "duration_seconds": round(
-                data.get("total_duration", 0) / 1_000_000_000, 2
+                total_duration_ns / 1_000_000_000, 2
             ),
         }
 

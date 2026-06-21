@@ -88,6 +88,13 @@ class LLMScheduler:
         self._total_duration = 0.0
         self._history: list[dict] = []  # Last 50 completed requests
 
+        # Token tracking
+        self._total_input_tokens = 0
+        self._total_output_tokens = 0
+        self._total_tokens = 0
+        self._total_tokens_per_second_sum = 0.0
+        self._agent_token_usage: dict[str, dict] = {}  # per-agent breakdown
+
     async def start(self):
         """Start the scheduler worker loop."""
         if self._worker_task is None or self._worker_task.done():
@@ -223,6 +230,32 @@ class LLMScheduler:
                 self._total_processed += 1
                 self._total_duration += duration
 
+                # Track token usage
+                input_tok = result.get("input_tokens", 0)
+                output_tok = result.get("output_tokens", 0)
+                total_tok = result.get("total_tokens", 0)
+                tok_per_sec = result.get("tokens_per_second", 0)
+
+                self._total_input_tokens += input_tok
+                self._total_output_tokens += output_tok
+                self._total_tokens += total_tok
+                if tok_per_sec > 0:
+                    self._total_tokens_per_second_sum += tok_per_sec
+
+                # Per-agent tracking
+                if request.agent_id not in self._agent_token_usage:
+                    self._agent_token_usage[request.agent_id] = {
+                        "input_tokens": 0,
+                        "output_tokens": 0,
+                        "total_tokens": 0,
+                        "request_count": 0,
+                    }
+                agent_usage = self._agent_token_usage[request.agent_id]
+                agent_usage["input_tokens"] += input_tok
+                agent_usage["output_tokens"] += output_tok
+                agent_usage["total_tokens"] += total_tok
+                agent_usage["request_count"] += 1
+
                 await self._log_request(request, "completed")
                 self._add_to_history(request)
 
@@ -281,6 +314,7 @@ class LLMScheduler:
 
     def _add_to_history(self, request: LLMRequest):
         """Add completed request to history (keep last 50)."""
+        result = request.result or {}
         entry = {
             "agent_id": request.agent_id,
             "task": request.task_description,
@@ -289,7 +323,11 @@ class LLMScheduler:
             "duration_seconds": round(
                 request.completed_at - request.started_at, 2
             ) if request.completed_at and request.started_at else None,
-            "tokens": request.result.get("tokens", 0) if request.result else 0,
+            "tokens": result.get("tokens", 0),
+            "input_tokens": result.get("input_tokens", 0),
+            "output_tokens": result.get("output_tokens", 0),
+            "total_tokens": result.get("total_tokens", 0),
+            "tokens_per_second": result.get("tokens_per_second", 0),
             "completed_at": datetime.fromtimestamp(
                 request.completed_at
             ).isoformat() if request.completed_at else None,
@@ -315,6 +353,11 @@ class LLMScheduler:
                 "elapsed_seconds": round(elapsed, 1),
             }
 
+        avg_tokens_per_second = (
+            round(self._total_tokens_per_second_sum / self._total_processed, 1)
+            if self._total_processed > 0 else 0
+        )
+
         return {
             "model": settings.ollama_model,
             "status": "processing" if self._active_request else "idle",
@@ -327,7 +370,12 @@ class LLMScheduler:
                 "total_timeouts": self._total_timeouts,
                 "deadlocks_prevented": self._deadlocks_prevented,
                 "avg_latency_seconds": avg_latency,
+                "total_tokens": self._total_tokens,
+                "total_input_tokens": self._total_input_tokens,
+                "total_output_tokens": self._total_output_tokens,
+                "avg_tokens_per_second": avg_tokens_per_second,
             },
+            "agent_token_usage": self._agent_token_usage,
             "history": self._history[-20:],  # Last 20 for dashboard
         }
 

@@ -858,11 +858,277 @@ body {
   font-size: 13px;
 }
 
+/* === Floating Background Orbs === */
+.orb-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+}
+
+.orb-1 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(79, 143, 247, 0.15), transparent 70%);
+  top: -10%;
+  left: -5%;
+  animation: float-orb-1 25s ease-in-out infinite;
+}
+
+.orb-2 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.12), transparent 70%);
+  top: 40%;
+  right: -8%;
+  animation: float-orb-2 30s ease-in-out infinite;
+}
+
+.orb-3 {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.1), transparent 70%);
+  bottom: -5%;
+  left: 30%;
+  animation: float-orb-3 20s ease-in-out infinite;
+}
+
+.orb-4 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(244, 114, 182, 0.08), transparent 70%);
+  top: 20%;
+  left: 50%;
+  animation: float-orb-4 35s ease-in-out infinite;
+}
+
+@keyframes float-orb-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(60px, 40px) scale(1.1); }
+  66% { transform: translate(-30px, 80px) scale(0.95); }
+}
+
+@keyframes float-orb-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-50px, -60px) scale(1.05); }
+  66% { transform: translate(40px, -30px) scale(0.9); }
+}
+
+@keyframes float-orb-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(70px, -50px) scale(1.1); }
+}
+
+@keyframes float-orb-4 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(-40px, 30px) scale(1.05); }
+  75% { transform: translate(50px, -40px) scale(0.95); }
+}
+
+/* === Rotating Gradient Border (for running agents) === */
+.agent-card.is-running {
+  position: relative;
+  border-color: transparent;
+}
+
+.agent-card.is-running::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: calc(var(--radius) + 2px);
+  background: conic-gradient(
+    from var(--border-angle, 0deg),
+    transparent 0%,
+    var(--accent-blue) 10%,
+    var(--accent-cyan) 20%,
+    transparent 30%,
+    transparent 100%
+  );
+  z-index: -1;
+  animation: rotate-border 3s linear infinite;
+}
+
+@keyframes rotate-border {
+  to { --border-angle: 360deg; }
+}
+
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* Shimmer overlay for running cards */
+.shimmer-overlay {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 50%,
+    transparent 100%
+  );
+  animation: shimmer-sweep 2.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes shimmer-sweep {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* === Loading Spinner === */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* === Agent Icon Badge === */
+.agent-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.agent-icon.ai-times {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+  border: 1px solid rgba(102, 126, 234, 0.3);
+}
+
+.agent-icon.mailman {
+  background: linear-gradient(135deg, rgba(79, 143, 247, 0.2), rgba(34, 211, 238, 0.2));
+  border: 1px solid rgba(79, 143, 247, 0.3);
+}
+
+.agent-icon.wallstreet_wolf {
+  background: linear-gradient(135deg, rgba(17, 153, 142, 0.2), rgba(56, 239, 125, 0.2));
+  border: 1px solid rgba(17, 153, 142, 0.3);
+}
+
+.agent-icon.news_analyst {
+  background: linear-gradient(135deg, rgba(240, 147, 251, 0.2), rgba(245, 87, 108, 0.2));
+  border: 1px solid rgba(240, 147, 251, 0.3);
+}
+
+/* === Token Usage Section === */
+.token-breakdown {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.token-chart-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.token-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+
+.token-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.token-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.token-legend-value {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-left: auto;
+}
+
+/* === LLM Stats Grid (expanded for tokens) === */
+.llm-stats-expanded {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+/* === Duration Bar in Table === */
+.duration-bar-container {
+  width: 50px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+.duration-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+}
+
+/* === Agent Color Dot in Table === */
+.agent-color-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.agent-color-dot.ai_times { background: #764ba2; }
+.agent-color-dot.mailman { background: #4f8ff7; }
+.agent-color-dot.wallstreet_wolf { background: #38ef7d; }
+.agent-color-dot.news_analyst { background: #f5576c; }
+
 /* === Responsive === */
 @media (max-width: 1024px) {
   .dashboard-grid { grid-template-columns: 1fr 1fr; }
   .dashboard-agents { grid-template-columns: 1fr; }
-  .llm-stats { grid-template-columns: repeat(2, 1fr); }
+  .llm-stats, .llm-stats-expanded { grid-template-columns: repeat(2, 1fr); }
+  .token-breakdown { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {
@@ -870,4 +1136,5 @@ body {
   .detail-grid { grid-template-columns: 1fr; }
   .header { flex-direction: column; gap: 12px; }
   .main-content { padding: 16px; }
+  .llm-stats, .llm-stats-expanded { grid-template-columns: 1fr 1fr; }
 }

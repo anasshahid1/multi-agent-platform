@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getAgent, getAgentLogs, getSchedule, triggerAgent } from "../api/client";
+import { getAgent, getAgentLogs, getSchedule, triggerAgent, getLLMStatus } from "../api/client";
 import LogViewer from "./LogViewer";
 import ScheduleEditor from "./ScheduleEditor";
 
@@ -8,17 +8,22 @@ export default function AgentDetail({ agentId, onBack }) {
   const [logs, setLogs] = useState([]);
   const [schedule, setSchedule] = useState(null);
   const [triggering, setTriggering] = useState(false);
+  const [tokenUsage, setTokenUsage] = useState(null);
 
   const fetchData = async () => {
     try {
-      const [agentData, logsData, scheduleData] = await Promise.all([
+      const [agentData, logsData, scheduleData, llmData] = await Promise.all([
         getAgent(agentId),
         getAgentLogs(agentId),
         getSchedule(agentId).catch(() => null),
+        getLLMStatus().catch(() => null),
       ]);
       setAgent(agentData);
       setLogs(logsData.logs || []);
       setSchedule(scheduleData);
+      if (llmData?.agent_token_usage?.[agentId]) {
+        setTokenUsage(llmData.agent_token_usage[agentId]);
+      }
     } catch (err) {
       console.error("Failed to fetch agent data:", err);
     }
@@ -155,6 +160,27 @@ export default function AgentDetail({ agentId, onBack }) {
                   : "Not scheduled"}
               </span>
             </div>
+            {tokenUsage && (
+              <>
+                <div style={{ borderTop: "1px solid var(--bg-glass-border)", margin: "10px 0" }} />
+                <div className="agent-meta-row">
+                  <span>Total Tokens</span>
+                  <span style={{ color: "var(--accent-cyan)", fontWeight: 600 }}>
+                    {tokenUsage.total_tokens.toLocaleString()}
+                  </span>
+                </div>
+                <div className="agent-meta-row">
+                  <span>Input / Output</span>
+                  <span>
+                    {tokenUsage.input_tokens.toLocaleString()} / {tokenUsage.output_tokens.toLocaleString()}
+                  </span>
+                </div>
+                <div className="agent-meta-row">
+                  <span>LLM Requests</span>
+                  <span>{tokenUsage.request_count}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

@@ -1,6 +1,13 @@
 import { triggerAgent } from "../api/client";
 import { useState } from "react";
 
+const AGENT_ICONS = {
+  ai_times: { icon: "\u25B6", cls: "ai-times" },       // play triangle
+  mailman: { icon: "\u2709", cls: "mailman" },          // envelope
+  wallstreet_wolf: { icon: "\u2191", cls: "wallstreet_wolf" }, // up arrow
+  news_analyst: { icon: "\u2261", cls: "news_analyst" }, // hamburger/lines
+};
+
 export default function AgentCard({ agent, onSelect, onRefresh, animClass }) {
   const [triggering, setTriggering] = useState(false);
 
@@ -35,16 +42,25 @@ export default function AgentCard({ agent, onSelect, onRefresh, animClass }) {
   };
 
   const isRunning = agent.status === "running" || triggering;
+  const iconData = AGENT_ICONS[agent.id] || { icon: "\u2022", cls: "" };
 
   return (
     <div
-      className={`agent-card ${animClass || ""}`}
+      className={`agent-card ${animClass || ""} ${isRunning ? "is-running" : ""}`}
       data-agent={agent.id}
       onClick={() => onSelect(agent.id)}
     >
+      {/* Shimmer overlay when running */}
+      {isRunning && <div className="shimmer-overlay" />}
+
       <div className="agent-card-body">
         <div className="agent-card-header">
-          <div className="agent-name">{agent.name}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div className={`agent-icon ${iconData.cls}`}>
+              {iconData.icon}
+            </div>
+            <div className="agent-name">{agent.name}</div>
+          </div>
           <div className={`agent-status ${agent.status}`}>
             <span
               className={`status-dot ${
@@ -89,6 +105,7 @@ export default function AgentCard({ agent, onSelect, onRefresh, animClass }) {
           onClick={handleTrigger}
           disabled={isRunning}
         >
+          {isRunning && <span className="spinner" />}
           {triggering
             ? "Triggered..."
             : agent.status === "running"
