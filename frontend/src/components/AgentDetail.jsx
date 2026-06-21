@@ -92,26 +92,28 @@ export default function AgentDetail({ agentId, onBack }) {
 
       <h2
         style={{
-          fontSize: 20,
-          fontWeight: 600,
-          marginBottom: 4,
-          letterSpacing: "-0.3px",
+          fontSize: 24,
+          fontWeight: 700,
+          marginBottom: 6,
+          letterSpacing: "-0.5px",
+          animation: "fadeIn 0.4s ease-out",
         }}
       >
         {agent.name}
       </h2>
       <p
         style={{
-          color: "var(--text-tertiary)",
-          fontSize: 13,
-          marginBottom: 20,
+          color: "var(--text-secondary)",
+          fontSize: 14,
+          marginBottom: 28,
+          animation: "fadeIn 0.5s ease-out",
         }}
       >
         {agent.description}
       </p>
 
       <div className="detail-grid">
-        <div className="card animate-in animate-in-1">
+        <div className="card glass animate-in animate-in-1">
           <div className="card-title" style={{ marginBottom: 18 }}>
             Run Statistics
           </div>
@@ -160,7 +162,7 @@ export default function AgentDetail({ agentId, onBack }) {
             </div>
             {tokenUsage && (
               <>
-                <div style={{ borderTop: "1px solid var(--border-subtle)", margin: "10px 0" }} />
+                <div style={{ borderTop: "1px solid var(--bg-glass-border)", margin: "10px 0" }} />
                 <div className="agent-meta-row">
                   <span>Total Tokens</span>
                   <span style={{ color: "var(--accent-cyan)", fontWeight: 600 }}>
@@ -182,7 +184,7 @@ export default function AgentDetail({ agentId, onBack }) {
           </div>
         </div>
 
-        <div className="card animate-in animate-in-2">
+        <div className="card glass animate-in animate-in-2">
           <div className="card-title" style={{ marginBottom: 18 }}>
             Schedule
           </div>
@@ -194,7 +196,7 @@ export default function AgentDetail({ agentId, onBack }) {
         </div>
       </div>
 
-      <div className="card animate-in animate-in-3">
+      <div className="card glass animate-in animate-in-3">
         <div className="card-header">
           <div className="card-title">Agent Logs</div>
           <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
