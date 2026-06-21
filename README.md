@@ -64,6 +64,70 @@ All schedules are configurable from the dashboard at runtime — no restart need
 
 ---
 
+## 100% Local AI Inference
+
+All AI inference runs entirely on your local machine. No data is sent to any cloud service.
+
+| Component | Where It Runs | Cloud Required? |
+|-----------|--------------|-----------------|
+| **Ollama Server** | Local process at `localhost:11434` | No |
+| **Qwen3 Model** | Model weights in `~/.ollama/`, loaded into local RAM | No |
+| **LLM API Calls** | Backend calls `http://host.docker.internal:11434` (localhost) | No |
+
+**What we do NOT use:** No OpenAI, no Google Gemini, no Anthropic Claude, no AWS Bedrock, no Azure OpenAI, no Hugging Face Inference API — no hosted LLM service of any kind.
+
+The one-time setup downloads (Ollama install, model weights, Python packages) require internet, but after setup you can disconnect from the internet entirely and all LLM inference still works. The agents that fetch external data (RSS feeds, Yahoo Finance, YouTube) need internet for data collection, but the AI analysis (summarizing, classifying, sentiment analysis) is 100% local.
+
+---
+
+## Orchestrator & LLM Scheduling
+
+The orchestrator is the central brain of the platform. It consists of three components:
+
+### 1. LLM Scheduler (`orchestrator/scheduler.py`)
+
+Since all 4 agents share a single local LLM (Qwen3), requests must be queued and processed one at a time. The scheduler implements:
+
+- **Priority Queue** — Requests are ordered by priority. Mailman gets `HIGH` priority (email classification is time-sensitive), other agents get `NORMAL` priority. This prevents low-priority tasks from starving urgent ones.
+- **Sequential Processing** — Only ONE LLM request runs at a time. The worker loop pulls the highest-priority request from the queue, sends it to Ollama, waits for the response, then processes the next.
+- **Request Tracking** — Every request is logged to the database with: agent ID, task description, priority, status, start time, completion time, duration, and tokens generated.
+
+### 2. Deadlock Prevention (`orchestrator/scheduler.py`)
+
+Five mechanisms prevent the system from getting stuck:
+
+| Mechanism | What It Prevents | How It Works |
+|-----------|-----------------|--------------|
+| **Max Queue Size (10)** | Memory exhaustion from unbounded queue | New requests are immediately rejected with an error when the queue reaches 10 pending items. Counter incremented in `deadlocks_prevented`. |
+| **Request Timeout (120s)** | Infinite blocking when LLM hangs or queue is overloaded | Every request has a 120-second maximum wait time. If exceeded, the request is cancelled and a `TimeoutError` is raised. Counter incremented in `deadlocks_prevented` and `total_timeouts`. |
+| **Skip Dead Requests** | Stale entries clogging the queue | The worker loop checks each request's status before processing. Cancelled or timed-out requests are skipped immediately. |
+| **Priority Ordering** | Starvation of critical tasks | High-priority requests (e.g., Mailman email classification) always process before low-priority ones, even if they were submitted later. |
+| **Single-Lock Processing** | Race conditions on LLM access | An `asyncio.Lock` ensures only one request accesses the LLM at a time. No concurrent inference calls. |
+
+All deadlock prevention metrics are exposed to the dashboard via the `/api/llm/status` endpoint and displayed in the LLM Queue Monitor view.
+
+### 3. Resource Monitor (`orchestrator/monitor.py`)
+
+Tracks system resources in real-time using `psutil`:
+
+- **CPU Usage** — Current percentage across all cores
+- **RAM Usage** — Used vs total, percentage, available memory
+- **Disk Usage** — Used vs total, percentage, free space
+- **Alert Thresholds** — Configurable via `.env` (default: 90%). Alerts appear on the dashboard when any metric exceeds its threshold.
+- **History** — Stores the last 60 samples (1 per minute) for the dashboard charts.
+
+### 4. Agent Manager (`orchestrator/agent_manager.py`)
+
+Manages the lifecycle of all agents:
+
+- **Registration** — Each agent is registered in the database on startup with its ID, name, and description.
+- **Scheduling** — Uses APScheduler to run agents at configured times. Supports cron (fixed time) and interval triggers.
+- **Manual Triggers** — Agents can be triggered on-demand from the dashboard via the "Run Now" button.
+- **Runtime Schedule Changes** — Schedules can be modified from the dashboard UI. Changes are persisted to SQLite and take effect immediately — no restart needed.
+- **Concurrency Guard** — An agent cannot be triggered if it's already running, preventing duplicate runs.
+
+---
+
 ## Tech Stack
 
 | Component | Technology |
@@ -104,7 +168,7 @@ Before you begin, ensure you have the following installed on your machine:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-username>/multi-agent-platform.git
+git clone https://github.com/anasshahid1/multi-agent-platform.git
 cd multi-agent-platform
 ```
 

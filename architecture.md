@@ -91,6 +91,71 @@ graph TB
     EMAIL --> GMAIL
 ```
 
+## Deadlock Prevention Architecture
+
+```mermaid
+graph TD
+    subgraph "Agent Request"
+        REQ[Agent submits LLM request]
+    end
+
+    subgraph "Layer 1: Queue Guard"
+        QC{Queue full?<br/>max 10 items}
+        REJECT[REJECT request<br/>deadlocks_prevented++]
+    end
+
+    subgraph "Layer 2: Priority Queue"
+        PQ[Priority Queue<br/>CRITICAL > HIGH > NORMAL > LOW]
+    end
+
+    subgraph "Layer 3: Timeout Guard"
+        WAIT{Waiting > 120s?}
+        TIMEOUT[TIMEOUT request<br/>total_timeouts++<br/>deadlocks_prevented++]
+    end
+
+    subgraph "Layer 4: Worker Loop"
+        SKIP{Request still<br/>valid?}
+        SKIPACT[SKIP dead request]
+    end
+
+    subgraph "Layer 5: Single Lock"
+        LOCK[asyncio.Lock<br/>ONE request at a time]
+        LLM[Ollama Qwen3<br/>Generate response]
+    end
+
+    RESULT[Return result to agent]
+
+    REQ --> QC
+    QC -->|Yes| REJECT
+    QC -->|No| PQ
+    PQ --> WAIT
+    WAIT -->|Yes| TIMEOUT
+    WAIT -->|No| SKIP
+    SKIP -->|Cancelled/Timed out| SKIPACT
+    SKIP -->|Valid| LOCK
+    LOCK --> LLM
+    LLM --> RESULT
+```
+
+### Deadlock Prevention Mechanisms
+
+| Layer | Mechanism | What It Prevents | Config |
+|-------|-----------|-----------------|--------|
+| 1 | **Max Queue Size** | Memory exhaustion from unbounded queue | `LLM_MAX_QUEUE_SIZE=10` |
+| 2 | **Priority Ordering** | Starvation of critical tasks | `RequestPriority.HIGH` for Mailman |
+| 3 | **Request Timeout** | Infinite blocking when LLM hangs | `LLM_REQUEST_TIMEOUT=120` seconds |
+| 4 | **Skip Dead Requests** | Stale entries clogging the queue | Automatic in worker loop |
+| 5 | **Single-Lock Processing** | Race conditions on LLM access | `asyncio.Lock` in scheduler |
+
+All metrics are tracked and exposed via `/api/llm/status`:
+- `deadlocks_prevented` — Total times Layer 1 or Layer 3 fired
+- `total_timeouts` — Total timed-out requests
+- `total_processed` — Successfully completed requests
+- `total_failed` — Requests that errored during LLM inference
+- `avg_latency_seconds` — Average time per LLM request
+
+---
+
 ## LLM Request Flow
 
 ```mermaid
