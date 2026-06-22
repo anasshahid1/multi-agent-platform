@@ -17,7 +17,7 @@ export default function LogViewer({ logs }) {
     <div className="log-container">
       {logs.map((log, i) => (
         <div className="log-entry" key={i}>
-          <span className="log-time">{log.created_at}</span>
+          <span className="log-time">{new Date(log.created_at.replace(' ', 'T') + 'Z').toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
           <span className={`log-level ${log.level}`}>{log.level}</span>
           <span className="log-message">{log.message}</span>
         </div>

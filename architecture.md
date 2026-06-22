@@ -7,98 +7,70 @@
 graph TB
     subgraph Browser["Browser"]
     style Browser fill:#eef2ff,stroke:#6366f1,stroke-width:2px,color:#4338ca
-        UI["React Dashboard<br/>localhost:3001"]
-    end
-
-    subgraph Frontend["Docker Container: Frontend"]
-    style Frontend fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1d4ed8
-        NGINX["nginx Reverse Proxy"]
+        UI["React Dashboard :3001"]
     end
 
     subgraph Backend["Docker Container: Backend"]
     style Backend fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1d4ed8
 
+        subgraph API["FastAPI Server"]
+        style API fill:#f8fafc,stroke:#94a3b8,stroke-dasharray:3 3,color:#475569
+            ROUTES["API Routes + WebSocket"]
+        end
+
         subgraph Orchestrator["Orchestrator"]
         style Orchestrator fill:#f8fafc,stroke:#94a3b8,stroke-dasharray:3 3,color:#475569
-            SCHED["LLM Scheduler<br/>Priority Queue + Deadlock Prevention"]
+            SCHED["LLM Scheduler<br/>Priority Queue"]
             MON["Resource Monitor<br/>CPU / RAM / Disk"]
-            AM["Agent Manager<br/>APScheduler Lifecycle"]
+            AM["Agent Manager<br/>APScheduler"]
         end
 
         subgraph Agents["Agents"]
         style Agents fill:#f0fdf4,stroke:#10b981,stroke-dasharray:3 3,color:#047857
-            A1["AI-Times<br/>YouTube AI Digest"]
-            A2["Mailman<br/>Gmail Classifier"]
-            A3["Wallstreet Wolf<br/>Stock Tracker"]
-            A4["News Analyst<br/>RSS Sentiment"]
+            ALL["4 Agents<br/>AI-Times · Mailman · Wallstreet · News"]
         end
 
         subgraph Services["Services"]
         style Services fill:#fff7ed,stroke:#f59e0b,stroke-dasharray:3 3,color:#b45309
-            LLM_CLIENT["LLM Client<br/>Ollama HTTP API"]
-            EMAIL["Email Service<br/>SMTP (aiosmtplib)"]
-            YT["YouTube Service<br/>scrapetube"]
+            LLM_CLIENT["LLM Client → Ollama"]
+            EMAIL["Email Service (SMTP)"]
         end
 
-        DB["(SQLite Database)"]
+        DB["SQLite Database"]
         style DB fill:#fffbeb,stroke:#d97706,stroke-width:2px,color:#92400e,stroke-dasharray:5 2
     end
 
     subgraph Host["Host Machine"]
     style Host fill:#fef2f2,stroke:#ef4444,stroke-width:2px,color:#b91c1c
         OLLAMA["Ollama Server :11434"]
-        QWEN["Qwen3 8B (CPU)"]
     end
 
-    subgraph External["External APIs (Free)"]
+    subgraph External["External APIs"]
     style External fill:#f5f3ff,stroke:#8b5cf6,stroke-width:2px,color:#6d28d9
         YAHOO["Yahoo Finance"]
-        RSS["RSS Feeds<br/>BBC / Reuters / TechCrunch"]
+        RSS["RSS Feeds"]
         GMAIL["Gmail IMAP + SMTP"]
         YOUTUBE["YouTube (scrapetube)"]
     end
 
-    UI -->|"HTTP / WebSocket"| NGINX
-    NGINX -->|"/api/*"| API
-    NGINX -->|"/ws/*"| API
-    API --> SCHED
+    UI -->|HTTP / WS| ROUTES
+    ROUTES -->|manage| AM
+    ROUTES --> SCHED
+    ROUTES --> MON
 
-    API --> AM
-    API --> MON
-
-    AM --> A1
-    AM --> A2
-    AM --> A3
-    AM --> A4
-
-    A1 --> SCHED
-    A2 --> SCHED
-    A3 --> SCHED
-    A4 --> SCHED
-
-    A1 --> YT
-    A1 --> EMAIL
-    A2 --> EMAIL
-    A3 --> EMAIL
-    A4 --> EMAIL
-
-    A2 -.->|"IMAP"| GMAIL
-    EMAIL -.->|"SMTP"| GMAIL
+    AM -->|schedules| ALL
+    ALL -->|LLM requests| SCHED
+    ALL -->|emails| EMAIL
+    ALL -->|persist| DB
+    ALL --> YAHOO
+    ALL --> RSS
 
     SCHED --> LLM_CLIENT
-    LLM_CLIENT -->|"host.docker.internal:11434"| OLLAMA
-    OLLAMA --> QWEN
+    LLM_CLIENT -->|:11434| OLLAMA
 
-    A1 --> DB
-    A2 --> DB
-    A3 --> DB
-    A4 --> DB
-    AM --> DB
-    SCHED --> DB
-
-    YT --> YOUTUBE
-    A3 --> YAHOO
-    A4 --> RSS
+    EMAIL -.->|SMTP| GMAIL
+    ALL -.->|IMAP| GMAIL
+    ALL --> YOUTUBE
 ```
 
 ## Deadlock Prevention Architecture

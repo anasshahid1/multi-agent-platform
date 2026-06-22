@@ -111,8 +111,8 @@ class NewsAnalystAgent(BaseAgent):
             await self.log("WARNING", "No articles fetched from RSS feeds")
             return 0
 
-        # Limit to top 15 most recent
-        articles = articles[:15]
+        # Limit to top 5 most recent (reduced from 15 for CPU performance)
+        articles = articles[:5]
         await self.log("INFO", f"Analyzing {len(articles)} articles")
 
         # Step 3: Analyze each article with LLM
