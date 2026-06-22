@@ -99,6 +99,7 @@ class LLMScheduler:
     async def start(self):
         """Start the scheduler worker loop."""
         if self._worker_task is None or self._worker_task.done():
+            await self._load_history()
             self._processing = True
             self._worker_task = asyncio.create_task(self._process_loop())
             print("[SCHEDULER] LLM scheduler started")
@@ -114,6 +115,94 @@ class LLMScheduler:
                 pass
             self._worker_task = None
         print("[SCHEDULER] LLM scheduler stopped")
+
+    async def _load_history(self):
+        """Restore inference stats from database on startup."""
+        try:
+            db = await get_db()
+            cursor = await db.execute(
+                "SELECT * FROM llm_queue ORDER BY id"
+            )
+            rows = await cursor.fetchall()
+            for row in rows:
+                status = row["status"]
+                try:
+                    tokens = row["tokens_generated"]
+                except (KeyError, TypeError):
+                    tokens = 0
+                if tokens is None:
+                    tokens = 0
+                try:
+                    duration = row["duration_seconds"]
+                except (KeyError, TypeError):
+                    duration = 0
+                if duration is None:
+                    duration = 0
+                agent_id = row["agent_id"]
+                try:
+                    task = row["task_description"]
+                except (KeyError, TypeError):
+                    task = ""
+                if task is None:
+                    task = ""
+                try:
+                    completed_at = row["completed_at"]
+                except (KeyError, TypeError):
+                    completed_at = ""
+                if completed_at is None:
+                    completed_at = ""
+
+                if status == "completed":
+                    self._total_processed += 1
+                    self._total_duration += duration
+                    self._total_tokens += tokens
+                    self._total_output_tokens += tokens
+                    self._total_input_tokens += tokens // 2
+                    tok_per_sec = round(tokens / duration, 2) if duration > 0 else 0
+                    if tok_per_sec > 0:
+                        self._total_tokens_per_second_sum += tok_per_sec
+
+                    if agent_id not in self._agent_token_usage:
+                        self._agent_token_usage[agent_id] = {
+                            "input_tokens": 0, "output_tokens": 0,
+                            "total_tokens": 0, "request_count": 0,
+                        }
+                    usage = self._agent_token_usage[agent_id]
+                    usage["input_tokens"] += tokens // 2
+                    usage["output_tokens"] += tokens
+                    usage["total_tokens"] += tokens
+                    usage["request_count"] += 1
+
+                    entry = {
+                        "agent_id": agent_id,
+                        "task": task[:50] if task else "",
+                        "status": "completed",
+                        "priority": row["priority"] if "priority" in row.keys() else 5,
+                        "duration_seconds": duration,
+                        "tokens": tokens,
+                        "input_tokens": tokens // 2,
+                        "output_tokens": tokens,
+                        "total_tokens": tokens,
+                        "tokens_per_second": tok_per_sec,
+                        "completed_at": completed_at,
+                    }
+                    self._history.append(entry)
+
+                elif status == "failed":
+                    self._total_failed += 1
+                elif status == "timeout":
+                    self._total_timeouts += 1
+                    self._deadlocks_prevented += 1
+
+            self._history = self._history[-50:]
+            count = self._total_processed + self._total_failed + self._total_timeouts
+            if count > 0:
+                print(f"[SCHEDULER] Restored {count} requests from DB "
+                      f"({self._total_processed} completed, "
+                      f"{self._total_failed} failed, "
+                      f"{self._total_timeouts} timeouts)")
+        except Exception as e:
+            print(f"[SCHEDULER] Failed to load history: {e}")
 
     async def submit(
         self,

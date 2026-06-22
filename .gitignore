@@ -40,3 +40,5 @@ Thumbs.db
 # Misc
 *.bak
 *.tmp
+*.pptx
+generate_slides.py

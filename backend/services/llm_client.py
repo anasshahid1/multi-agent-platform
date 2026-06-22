@@ -77,8 +77,13 @@ class LLMClient:
             output_tokens / eval_duration_s, 2
         ) if eval_duration_s > 0 else 0
 
+        response_text = data.get("response", "").strip()
+        # Qwen3 models may put output in "thinking" field when "response" is empty
+        if not response_text:
+            response_text = data.get("thinking", "").strip()
+
         return {
-            "response": data.get("response", ""),
+            "response": response_text,
             "tokens": output_tokens,
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
