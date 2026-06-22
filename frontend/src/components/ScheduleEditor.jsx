@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { updateSchedule } from "../api/client";
+import { useToast } from "./Toast";
+import { Save } from "lucide-react";
 
 export default function ScheduleEditor({ agentId, schedule, onSaved }) {
   const [type, setType] = useState(schedule?.schedule_type || "cron");
@@ -8,11 +10,10 @@ export default function ScheduleEditor({ agentId, schedule, onSaved }) {
   const [interval, setInterval_] = useState(schedule?.interval_minutes ?? 30);
   const [enabled, setEnabled] = useState(schedule?.enabled ?? true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
+  const addToast = useToast();
 
   const handleSave = async () => {
     setSaving(true);
-    setMessage("");
     try {
       await updateSchedule(agentId, {
         schedule_type: type,
@@ -21,10 +22,10 @@ export default function ScheduleEditor({ agentId, schedule, onSaved }) {
         interval_minutes: type === "interval" ? interval : null,
         enabled: enabled,
       });
-      setMessage("Schedule updated!");
+      addToast("Schedule saved", "success");
       if (onSaved) onSaved();
     } catch (err) {
-      setMessage("Error: " + err.message);
+      addToast("Error: " + err.message, "error");
     }
     setSaving(false);
   };
@@ -95,7 +96,7 @@ export default function ScheduleEditor({ agentId, schedule, onSaved }) {
             type="checkbox"
             checked={enabled}
             onChange={(e) => setEnabled(e.target.checked)}
-            style={{ accentColor: "var(--accent-blue)" }}
+            style={{ accentColor: "var(--accent)" }}
           />
           <span className="form-label" style={{ margin: 0 }}>
             Enabled
@@ -109,23 +110,13 @@ export default function ScheduleEditor({ agentId, schedule, onSaved }) {
         disabled={saving}
         style={{ width: "100%" }}
       >
+        {saving ? (
+          <span className="spinner" />
+        ) : (
+          <Save size={12} strokeWidth={2} style={{ marginRight: 4 }} />
+        )}
         {saving ? "Saving..." : "Save Schedule"}
       </button>
-
-      {message && (
-        <div
-          style={{
-            fontSize: 12,
-            fontWeight: 500,
-            color: message.startsWith("Error")
-              ? "var(--accent-red)"
-              : "var(--accent-green)",
-            textAlign: "center",
-          }}
-        >
-          {message}
-        </div>
-      )}
     </div>
   );
 }

@@ -1,198 +1,150 @@
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import {
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Shield,
+  BarChart3,
+} from "lucide-react";
 
-const AGENT_COLORS = {
-  ai_times: "#764ba2",
-  mailman: "#4f8ff7",
-  wallstreet_wolf: "#38ef7d",
-  news_analyst: "#f5576c",
+const AGENT_SHADES = {
+  ai_times: "#3b82f6",
+  mailman: "#60a5fa",
+  wallstreet_wolf: "#93c5fd",
+  news_analyst: "#bfdbfe",
 };
-
-function AnimatedNumber({ value, suffix = "" }) {
-  return (
-    <span className="llm-stat-value">
-      {typeof value === "number" ? value.toLocaleString() : value}
-      {suffix}
-    </span>
-  );
-}
 
 const PieTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div
-      style={{
-        background: "rgba(10, 14, 23, 0.95)",
-        border: "1px solid rgba(255,255,255,0.1)",
-        borderRadius: 8,
-        padding: "8px 12px",
-        fontSize: 11,
-      }}
-    >
-      <div style={{ color: payload[0].payload.fill, fontWeight: 600 }}>
-        {payload[0].name}
-      </div>
-      <div style={{ color: "#e8eaed", marginTop: 2 }}>
+    <div style={{
+      background: "#1c1c1f",
+      border: "1px solid #2e2e32",
+      borderRadius: 6,
+      padding: "6px 10px",
+      fontSize: 11,
+    }}>
+      <div style={{ color: "#ededef", fontWeight: 500 }}>{payload[0].name}</div>
+      <div style={{ color: "#8e8e93", marginTop: 2 }}>
         {payload[0].value.toLocaleString()} tokens
       </div>
     </div>
   );
 };
 
+function Stat({ value, label, icon }) {
+  const Icon = icon;
+  return (
+    <div className="llm-stat">
+      <div className="llm-stat-icon">
+        <Icon size={14} strokeWidth={1.5} />
+      </div>
+      <div className="llm-stat-value">
+        {typeof value === "number" ? value.toLocaleString() : value}
+      </div>
+      <div className="llm-stat-label">{label}</div>
+    </div>
+  );
+}
+
 export default function LLMMonitor({ llmStatus }) {
   if (!llmStatus) return null;
 
-  const {
-    status,
-    queue_depth,
-    max_queue_size,
-    active_request,
-    stats,
-    history,
-    agent_token_usage,
-  } = llmStatus;
+  const { status, queue_depth, max_queue_size, active_request, stats, history, agent_token_usage } = llmStatus;
 
-  // Build pie chart data from agent token usage
-  const pieData = Object.entries(agent_token_usage || {}).map(
-    ([agentId, usage]) => ({
-      name: agentId.replace(/_/g, " "),
-      value: usage.total_tokens,
-      fill: AGENT_COLORS[agentId] || "#8b92a5",
-    })
-  );
-
-  // Max duration for relative bar sizing
-  const maxDuration = Math.max(
-    ...(history || []).map((h) => h.duration_seconds || 0),
-    1
-  );
+  const pieData = Object.entries(agent_token_usage || {}).map(([id, u]) => ({
+    name: id.replace(/_/g, " "),
+    value: u.total_tokens,
+    fill: AGENT_SHADES[id] || "#636366",
+  }));
 
   return (
     <div>
-      {/* Stats Cards — Row 1 */}
-      <div className="card glass animate-in" style={{ marginBottom: 16 }}>
+      <div className="card animate-in" style={{ marginBottom: 12 }}>
         <div className="card-header">
-          <div className="card-title">LLM Scheduler</div>
+          <div className="card-title">
+            <BarChart3 size={13} strokeWidth={1.5} style={{ marginRight: 6, verticalAlign: "middle" }} />
+            Inference Scheduler
+          </div>
           <div className="llm-status-bar">
             <span className={`llm-status-indicator ${status}`}>{status}</span>
-            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-              Queue: {queue_depth} / {max_queue_size}
+            <span style={{ fontSize: 11, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
+              {queue_depth}/{max_queue_size} queued
             </span>
           </div>
         </div>
 
         <div className="llm-stats-expanded">
-          <div className="llm-stat">
-            <AnimatedNumber value={stats.total_processed} />
-            <div className="llm-stat-label">Processed</div>
-          </div>
-          <div className="llm-stat">
-            <AnimatedNumber value={stats.total_failed} />
-            <div className="llm-stat-label">Failed</div>
-          </div>
-          <div className="llm-stat">
-            <AnimatedNumber value={stats.avg_latency_seconds} suffix="s" />
-            <div className="llm-stat-label">Avg Latency</div>
-          </div>
-          <div className="llm-stat">
-            <AnimatedNumber value={stats.deadlocks_prevented} />
-            <div className="llm-stat-label">Deadlocks Prevented</div>
-          </div>
+          <Stat value={stats.total_processed} label="Processed" icon={CheckCircle2} />
+          <Stat value={stats.total_failed} label="Failed" icon={XCircle} />
+          <Stat value={`${stats.avg_latency_seconds}s`} label="Avg Latency" icon={Clock} />
+          <Stat value={stats.deadlocks_prevented} label="Deadlocks" icon={Shield} />
         </div>
 
-        {/* Stats Cards — Row 2 (Tokens) */}
         <div className="llm-stats-expanded">
-          <div className="llm-stat">
-            <AnimatedNumber value={stats.total_tokens || 0} />
-            <div className="llm-stat-label">Total Tokens</div>
-          </div>
-          <div className="llm-stat">
-            <AnimatedNumber value={stats.total_input_tokens || 0} />
-            <div className="llm-stat-label">Input Tokens</div>
-          </div>
-          <div className="llm-stat">
-            <AnimatedNumber value={stats.total_output_tokens || 0} />
-            <div className="llm-stat-label">Output Tokens</div>
-          </div>
-          <div className="llm-stat">
-            <AnimatedNumber
-              value={stats.avg_tokens_per_second || 0}
-              suffix=" tok/s"
-            />
-            <div className="llm-stat-label">Avg Speed</div>
-          </div>
+          <Stat value={stats.total_tokens || 0} label="Total Tokens" icon={BarChart3} />
+          <Stat value={stats.total_input_tokens || 0} label="Input" icon={BarChart3} />
+          <Stat value={stats.total_output_tokens || 0} label="Output" icon={BarChart3} />
+          <Stat value={`${stats.avg_tokens_per_second || 0}`} label="Avg tok/s" icon={Clock} />
         </div>
 
         {active_request && (
           <div className="active-request">
-            <div className="active-request-label">Active Request</div>
+            <div className="active-request-label">
+              <Clock size={11} strokeWidth={2} style={{ marginRight: 4, verticalAlign: "middle" }} />
+              Processing
+            </div>
             <div className="active-request-task">{active_request.task}</div>
             <div className="active-request-meta">
-              Agent: {active_request.agent_id} &nbsp;&bull;&nbsp; Elapsed:{" "}
-              {active_request.elapsed_seconds}s &nbsp;&bull;&nbsp; Priority:{" "}
-              {active_request.priority}
+              {active_request.agent_id} &middot; {active_request.elapsed_seconds}s &middot; p{active_request.priority}
             </div>
           </div>
         )}
       </div>
 
-      {/* Token Usage by Agent (Pie Chart) */}
-      {pieData.length > 0 && (
-        <div className="card glass animate-in animate-in-1" style={{ marginBottom: 16 }}>
-          <div className="card-title" style={{ marginBottom: 12 }}>
-            Token Usage by Agent
-          </div>
+      {pieData.length > 0 ? (
+        <div className="card animate-in animate-in-1" style={{ marginBottom: 12 }}>
+          <div className="card-title" style={{ marginBottom: 8 }}>Token Distribution</div>
           <div className="token-breakdown">
             <div className="token-chart-container">
-              <ResponsiveContainer width={200} height={200}>
+              <ResponsiveContainer width={160} height={160}>
                 <PieChart>
-                  <Pie
-                    data={pieData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={85}
-                    paddingAngle={3}
-                    strokeWidth={0}
-                  >
-                    {pieData.map((entry, i) => (
-                      <Cell key={i} fill={entry.fill} />
-                    ))}
+                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={2} strokeWidth={0}>
+                    {pieData.map((e, i) => <Cell key={i} fill={e.fill} />)}
                   </Pie>
                   <Tooltip content={<PieTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
             <div className="token-legend">
-              {pieData.map((entry, i) => (
+              {pieData.map((e, i) => (
                 <div className="token-legend-item" key={i}>
-                  <div
-                    className="token-legend-dot"
-                    style={{ background: entry.fill }}
-                  />
-                  <span>{entry.name}</span>
-                  <span className="token-legend-value">
-                    {entry.value.toLocaleString()}
-                  </span>
+                  <div className="token-legend-dot" style={{ background: e.fill }} />
+                  <span>{e.name}</span>
+                  <span className="token-legend-value">{e.value.toLocaleString()}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Request History Table */}
-      <div className="card glass animate-in animate-in-2">
+      <div className="card animate-in animate-in-2">
         <div className="card-header">
-          <div className="card-title">Request History</div>
-          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-            Last {history?.length || 0} requests
+          <div className="card-title">Request Log</div>
+          <span style={{ fontSize: 11, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>
+            {history?.length || 0} entries
           </span>
         </div>
 
         {history && history.length > 0 ? (
-          <div style={{ maxHeight: 450, overflowY: "auto" }}>
+          <div style={{ maxHeight: 400, overflowY: "auto" }}>
             <table className="history-table">
               <thead>
                 <tr>
@@ -209,58 +161,14 @@ export default function LLMMonitor({ llmStatus }) {
               <tbody>
                 {[...history].reverse().map((item, i) => (
                   <tr key={i}>
-                    <td style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                      {item.completed_at
-                        ? new Date(item.completed_at).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
-                          })
-                        : "-"}
-                    </td>
-                    <td style={{ fontWeight: 500 }}>
-                      <span className={`agent-color-dot ${item.agent_id}`} />
-                      {item.agent_id}
-                    </td>
-                    <td
-                      style={{
-                        maxWidth: 200,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                      title={item.task}
-                    >
-                      {item.task}
-                    </td>
-                    <td>
-                      {item.duration_seconds}s
-                      <div className="duration-bar-container">
-                        <div
-                          className="duration-bar-fill"
-                          style={{
-                            width: `${Math.min(
-                              (item.duration_seconds / maxDuration) * 100,
-                              100
-                            )}%`,
-                          }}
-                        />
-                      </div>
-                    </td>
-                    <td style={{ color: "var(--text-muted)", fontSize: 11 }}>
-                      {item.input_tokens || "-"}
-                    </td>
-                    <td style={{ fontSize: 11 }}>
-                      {item.output_tokens || item.tokens || "-"}
-                    </td>
-                    <td style={{ color: "var(--accent-cyan)", fontSize: 11 }}>
-                      {item.tokens_per_second || "-"}
-                    </td>
-                    <td>
-                      <span className={`status-badge ${item.status}`}>
-                        {item.status}
-                      </span>
-                    </td>
+                    <td>{item.completed_at ? new Date(item.completed_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "\u2014"}</td>
+                    <td style={{ color: "var(--text-primary)" }}>{item.agent_id}</td>
+                    <td style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={item.task}>{item.task}</td>
+                    <td>{item.duration_seconds}s</td>
+                    <td>{item.input_tokens || "\u2014"}</td>
+                    <td>{item.output_tokens || item.tokens || "\u2014"}</td>
+                    <td>{item.tokens_per_second || "\u2014"}</td>
+                    <td><span className={`status-badge ${item.status}`}>{item.status}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -268,7 +176,9 @@ export default function LLMMonitor({ llmStatus }) {
           </div>
         ) : (
           <div className="empty-state">
-            No LLM requests yet. Trigger an agent to see activity here.
+            <BarChart3 size={24} strokeWidth={1} style={{ opacity: 0.3, marginBottom: 8 }} />
+            <p>No inference requests yet</p>
+            <p style={{ fontSize: 11, marginTop: 4 }}>Trigger an agent to see activity here</p>
           </div>
         )}
       </div>

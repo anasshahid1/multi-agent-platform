@@ -1,9 +1,13 @@
+import { ScrollText } from "lucide-react";
+
 export default function LogViewer({ logs }) {
   if (!logs || logs.length === 0) {
     return (
       <div className="log-container">
         <div className="empty-state">
-          No logs yet. Run the agent to generate logs.
+          <ScrollText size={24} strokeWidth={1} style={{ opacity: 0.3, marginBottom: 8 }} />
+          <p>No logs yet</p>
+          <p style={{ fontSize: 11, marginTop: 4 }}>Run the agent to generate logs</p>
         </div>
       </div>
     );

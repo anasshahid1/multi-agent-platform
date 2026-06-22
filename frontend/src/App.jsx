@@ -7,6 +7,8 @@ import {
   getOllamaStatus,
   connectWebSocket,
 } from "./api/client";
+import { ToastProvider } from "./components/Toast";
+import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import Dashboard from "./components/Dashboard";
 import AgentDetail from "./components/AgentDetail";
@@ -20,7 +22,6 @@ function App() {
   const [llmStatus, setLlmStatus] = useState(null);
   const [ollamaStatus, setOllamaStatus] = useState(null);
 
-  // Fetch initial data
   const fetchAll = useCallback(async () => {
     try {
       const [agentsData, metricsData, llmData, ollamaData] = await Promise.all([
@@ -41,7 +42,6 @@ function App() {
   useEffect(() => {
     fetchAll();
 
-    // WebSocket for real-time updates
     const cleanup = connectWebSocket((data) => {
       if (data.type === "dashboard_update") {
         if (data.system) setMetrics(data.system);
@@ -50,7 +50,6 @@ function App() {
       }
     });
 
-    // Fallback polling every 10s
     const pollInterval = setInterval(fetchAll, 10000);
 
     return () => {
@@ -59,14 +58,9 @@ function App() {
     };
   }, [fetchAll]);
 
-  const handleSelectAgent = (agentId) => {
-    setSelectedAgent(agentId);
-    setCurrentView("detail");
-  };
-
-  const handleNavigate = (view) => {
+  const handleNavigate = (view, agentId) => {
+    setSelectedAgent(agentId || null);
     setCurrentView(view);
-    setSelectedAgent(null);
   };
 
   const renderContent = () => {
@@ -87,31 +81,29 @@ function App() {
       <Dashboard
         agents={agents}
         metrics={metrics}
-        onSelectAgent={handleSelectAgent}
+        onSelectAgent={(id) => handleNavigate("detail", id)}
         onRefresh={fetchAll}
       />
     );
   };
 
   return (
-    <div className="app">
-      {/* Animated floating background orbs */}
-      <div className="orb-container">
-        <div className="orb orb-1" />
-        <div className="orb orb-2" />
-        <div className="orb orb-3" />
-        <div className="orb orb-4" />
+    <ToastProvider>
+      <div className="app-layout">
+        <Sidebar
+          currentView={currentView}
+          onNavigate={handleNavigate}
+          agents={agents}
+          onRefresh={fetchAll}
+        />
+        <div className="app-main">
+          <Header
+            systemStatus={{ ollama: ollamaStatus }}
+          />
+          <main className="main-content">{renderContent()}</main>
+        </div>
       </div>
-
-      <Header
-        currentView={currentView}
-        onNavigate={handleNavigate}
-        systemStatus={{ ollama: ollamaStatus }}
-      />
-      <main className="main-content" style={{ position: "relative", zIndex: 1 }}>
-        {renderContent()}
-      </main>
-    </div>
+    </ToastProvider>
   );
 }
 
