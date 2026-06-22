@@ -18,18 +18,19 @@ git checkout pro-ui
 
 # 3. Start Ollama + pull model
 brew services start ollama
-ollama pull qwen3:14b    # ~9GB, 20-30 min on typical connection
+ollama pull qwen3:8b     # ~5.2GB
+ollama pull llama3.2:3b  # ~2.0GB, used by Mailman for fast classification
 
 # 4. Configure .env
 cp .env.example .env
 # Edit .env — fill in Gmail credentials (App Password from Google Account)
-# For 14B model, .env.example already has OLLAMA_MODEL=qwen3:14b
+# .env.example has OLLAMA_MODEL=qwen3:8b for CPU-based machines
 
 # 5. Build + start
 docker compose up --build -d
 
 # 6. Open dashboard
-open http://localhost:3000
+open http://localhost:3001
 ```
 
 ---
@@ -50,7 +51,7 @@ open http://localhost:3000
 
 | Service | Port | Notes |
 |---------|------|-------|
-| Frontend (nginx) | `3000` | Proxies `/api/*` and `/ws/*` to backend |
+| Frontend (nginx) | `3001` | Proxies `/api/*` and `/ws/*` to backend |
 | Backend (FastAPI) | `8000` | Container-internal only |
 | Ollama (host) | `11434` | **Runs natively on Mac**, not in Docker |
 | Backend → Ollama | `http://host.docker.internal:11434` | Via Docker DNS |
@@ -60,7 +61,7 @@ open http://localhost:3000
 ## Architecture
 
 ```
-Browser :3000
+Browser :3001
   │
   ▼
 nginx (frontend container)
@@ -88,7 +89,8 @@ FastAPI Backend
    │
    ▼
 Ollama (host) :11434
-   └── qwen3:14b (or 8b)
+   ├── qwen3:8b (agents)
+   └── llama3.2:3b (Mailman classifier)
 ```
 
 ---
@@ -101,7 +103,7 @@ Ollama (host) :11434
 |------|---------|
 | `backend/main.py` | FastAPI entry, lifespan (DB init, agent register, schedule seed, shutdown) |
 | `backend/config.py` | Pydantic Settings from .env |
-| `backend/orchestrator/scheduler.py` | **LLM priority queue** — 5 deadlock mechanisms (max queue 10, timeout 120s, skip dead, priority ordering, single-lock), token tracking |
+| `backend/orchestrator/scheduler.py` | **LLM priority queue** — 5 deadlock mechanisms (max queue 10, timeout 300s, skip dead, priority ordering, single-lock), token tracking |
 | `backend/orchestrator/monitor.py` | psutil CPU/RAM/Disk, 60-sample history, alert thresholds |
 | `backend/orchestrator/agent_manager.py` | Agent lifecycle via APScheduler, schedule CRUD, manual triggers, concurrency guard |
 | `backend/services/llm_client.py` | Ollama API, returns `LLMResponse` with full tokenization (input/output/total/tok/s) |
@@ -136,7 +138,7 @@ Ollama (host) :11434
 
 ```env
 OLLAMA_BASE_URL=http://host.docker.internal:11434
-OLLAMA_MODEL=qwen3:14b
+OLLAMA_MODEL=qwen3:8b
 
 # Gmail SMTP for sending email digests
 SMTP_HOST=smtp.gmail.com
@@ -172,7 +174,7 @@ LLM_MAX_QUEUE_SIZE=10
 
 | Decision | Rationale |
 |----------|-----------|
-| **Python 3.11** (not 3.12) | Stability — package compatibility with psutil, curl_cffi, etc. |
+| **Python 3.12** | Requirement — Dockerfile uses python:3.12-slim |
 | **Ollama native on Mac** (not Docker) | Docker Ollama image is 2.6GB and failed to pull on slow connection |
 | **Qwen3:8B on this laptop, 14B on other** | 8B (5.2GB) fits 16GB RAM machine; 14B (9.3GB) needs 32GB |
 | **SSL verification disabled** | Corporate proxy (Zscaler) breaks curl_cffi/yfinance; `PYTHONHTTPSVERIFY=0`, `curl_cffi Session(verify=False)` |
@@ -199,7 +201,7 @@ Full flow verified via API:
 ## Docker Compose Details
 
 `docker-compose.yml` defines 2 services:
-- **backend**: Python 3.11-slim, pip with 300s timeout and 10 retries, DNS 8.8.8.8, `PYTHONHTTPSVERIFY=0`, `OLLAMA_BASE_URL=http://host.docker.internal:11434`
+- **backend**: Python 3.12-slim, pip with 300s timeout and 10 retries, DNS 8.8.8.8, `PYTHONHTTPSVERIFY=0`, `OLLAMA_BASE_URL=http://host.docker.internal:11434`
 - **frontend**: Node 18 build → nginx alpine, proxy `/api/` and `/ws/` to backend
 
 Ollama runs on the host. Docker container reaches it via `host.docker.internal` (special DNS on Mac/Windows).

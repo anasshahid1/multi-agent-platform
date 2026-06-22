@@ -6,15 +6,16 @@
 ## Minute 0:00 - 0:30 | Introduction
 
 - State your name, project name
-- "This is a multi-agent auto-scheduling platform running entirely locally using Ollama and Qwen3 — no cloud LLM APIs"
-- Quick mention: Python backend, React dashboard, SQLite, Docker Compose
+- "This is a multi-agent auto-scheduling platform running entirely locally using Ollama — no cloud LLM APIs"
+- "Uses two models: Qwen3 8B for heavy inference (summaries, market commentary) and Llama3.2 3B for fast classification (email sorting)"
+- Quick mention: Python 3.12 backend, React dashboard, SQLite, Docker Compose
 
 ---
 
 ## Minute 0:30 - 1:30 | Architecture Overview
 
-- Show the `architecture-diagram.png` on screen
-- Walk through: "The orchestrator manages 4 agents, each has its own schedule, all share a single LLM through a priority queue with deadlock prevention"
+- Show the `architecture-diagram.png` on screen (color-coded: blue Docker, green agents, orange services, purple APIs)
+- Walk through: "The orchestrator manages 4 agents, each has its own schedule, all share a single LLM through a priority queue with deadlock prevention. The diagram is color-coded to show the separation of concerns."
 - Run in terminal:
   ```bash
   docker compose ps
@@ -24,13 +25,13 @@
   ```bash
   ollama list
   ```
-  Show Qwen3 model loaded locally
+  Show both models: qwen3:8b (for agents) and llama3.2:3b (Mailman classifier)
 
 ---
 
 ## Minute 1:30 - 3:00 | Dashboard Tour
 
-- Open `http://localhost:3000` in browser
+- Open `http://localhost:3001` in browser (port 3001 was used since 3000 was occupied by another project)
 - Show the **main dashboard**:
   - CPU / RAM / Disk gauges updating in real-time
 - Show the **4 agent cards**:
@@ -101,10 +102,12 @@
 ## Minute 7:30 - 8:00 | Mailman Explanation
 
 - Click on Mailman detail view
-- Show the schedule (every 30 minutes)
+- Show the schedule (daily at 9:00 — changed from every 30 min to cron to avoid excessive runs)
 - Explain:
   > "Mailman connects to Gmail via IMAP, fetches unread emails, and classifies each one with the LLM into five categories: URGENT, IMPORTANT, NEWSLETTER, NOTIFICATION, or SPAM"
-- If Gmail is configured, trigger a quick run and show the classification logs
+- "Mailman uses Llama3.2 3B instead of Qwen3 8B because email classification only needs 20 tokens — the smaller model is 3x faster on CPU and perfectly accurate for this task"
+- "The scheduler supports per-request model overrides — each agent can specify which model to use"
+- If Gmail is configured, trigger a quick run and show the classification logs (runs through ~10 emails in ~8 minutes on CPU)
 - If not configured, show the code and explain the flow
 
 ---
@@ -130,7 +133,7 @@
   >
   > "Layer 2 — Priority Ordering: High-priority requests always process first, even if submitted later. This prevents starvation where critical tasks get stuck behind long-running low-priority ones."
   >
-  > "Layer 3 — Request Timeout: Every request has a 120-second maximum wait time. If the LLM hangs or the queue is overloaded, the request is automatically cancelled. Without this, agents would block forever — classic deadlock."
+  > "Layer 3 — Request Timeout: Every request has a 300-second maximum wait time. If the LLM hangs or the queue is overloaded, the request is automatically cancelled. Without this, agents would block forever — classic deadlock. The timeout is configurable via .env for slower CPUs."
   >
   > "Layer 4 — Skip Dead Requests: The worker loop checks each request's status before processing it. If a request was already timed out or cancelled, it's skipped immediately so the queue doesn't get clogged."
   >
@@ -157,7 +160,8 @@
   - Clean separation: orchestrator, agents, services, routes
   - Each agent inherits from BaseAgent
   - Shared services (email, LLM client, YouTube scraper)
-- Show the architecture diagram in the repo
+- Show the architecture diagram in the repo (now color-coded with sub-diagrams for deadlock prevention, LLM flow, and agent scheduling)
+- Show `SETUP_CONTEXT.md` — deployment guide for setting up on a new machine with opencode
 
 ---
 
@@ -173,11 +177,12 @@
 
 - [ ] Ollama running with Qwen3 model loaded (`ollama list` shows model)
 - [ ] Docker containers running (`docker compose ps` shows backend + frontend)
-- [ ] Dashboard open at http://localhost:3000
+- [ ] Dashboard open at http://localhost:3001
 - [ ] Screen recording software ready (QuickTime / OBS)
 - [ ] Microphone working for voiceover
 - [ ] Close unnecessary tabs/apps for a clean screen
 - [ ] Run News Analyst once before recording so LLM Queue has history to show
+- [ ] Run Mailman once ~5 min before — shows classification results in history
 - [ ] Upload to YouTube (public or unlisted)
 - [ ] Video is under 10 minutes
 
@@ -191,14 +196,14 @@ docker compose ps
 ollama list
 
 # Trigger agents via CLI (backup if dashboard buttons don't work)
-curl -X POST http://localhost:3000/api/agents/news_analyst/trigger
-curl -X POST http://localhost:3000/api/agents/ai_times/trigger
-curl -X POST http://localhost:3000/api/agents/wallstreet_wolf/trigger
-curl -X POST http://localhost:3000/api/agents/mailman/trigger
+curl -X POST http://localhost:3001/api/agents/news_analyst/trigger
+curl -X POST http://localhost:3001/api/agents/ai_times/trigger
+curl -X POST http://localhost:3001/api/agents/wallstreet_wolf/trigger
+curl -X POST http://localhost:3001/api/agents/mailman/trigger
 
 # Check agent status
-curl http://localhost:3000/api/agents/ | python3 -m json.tool
+curl http://localhost:3001/api/agents/ | python3 -m json.tool
 
 # Check LLM activity
-curl http://localhost:3000/api/llm/status | python3 -m json.tool
+curl http://localhost:3001/api/llm/status | python3 -m json.tool
 ```

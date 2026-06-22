@@ -11,7 +11,7 @@ A fully operational multi-agent platform running entirely on your local machine 
 ```
                          +---------------------------+
                          |     React Dashboard       |
-                         |     (localhost:3000)       |
+                         |     (localhost:3001)       |
                          +---------------------------+
                                     |
                               nginx reverse proxy
@@ -222,7 +222,7 @@ First build takes a few minutes (downloads Python packages). Subsequent starts a
 Open your browser and navigate to:
 
 ```
-http://localhost:3000
+http://localhost:3001
 ```
 
 You should see the dashboard with:
@@ -236,13 +236,13 @@ Click **"Run Now"** on any agent card, or use the API:
 
 ```bash
 # Trigger the News Analyst
-curl -X POST http://localhost:3000/api/agents/news_analyst/trigger
+curl -X POST http://localhost:3001/api/agents/news_analyst/trigger
 
 # Check its status
-curl http://localhost:3000/api/agents/news_analyst
+curl http://localhost:3001/api/agents/news_analyst
 
 # View LLM queue activity
-curl http://localhost:3000/api/llm/status
+curl http://localhost:3001/api/llm/status
 ```
 
 ---

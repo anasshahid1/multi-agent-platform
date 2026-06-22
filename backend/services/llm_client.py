@@ -29,6 +29,7 @@ class LLMClient:
         system_prompt: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: int = 1024,
+        model: Optional[str] = None,
     ) -> dict:
         """
         Send a prompt to the Ollama LLM and return the response.
@@ -38,12 +39,13 @@ class LLMClient:
             system_prompt: Optional system instruction for the model
             temperature: Sampling temperature (0.0 - 1.0)
             max_tokens: Maximum tokens to generate
+            model: Override model name (defaults to settings.ollama_model)
 
         Returns:
             dict with 'response' (text), 'tokens' (count), 'duration' (seconds)
         """
         payload = {
-            "model": self.model,
+            "model": model or self.model,
             "prompt": prompt,
             "stream": False,
             "options": {

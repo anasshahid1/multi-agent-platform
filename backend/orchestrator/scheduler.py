@@ -52,6 +52,7 @@ class LLMRequest:
     system_prompt: Optional[str] = field(default=None, compare=False)
     temperature: float = field(default=0.7, compare=False)
     max_tokens: int = field(default=1024, compare=False)
+    model: Optional[str] = field(default=None, compare=False)
     status: RequestStatus = field(default=RequestStatus.PENDING, compare=False)
     result: Optional[dict] = field(default=None, compare=False)
     error: Optional[str] = field(default=None, compare=False)
@@ -123,6 +124,7 @@ class LLMScheduler:
         priority: RequestPriority = RequestPriority.NORMAL,
         temperature: float = 0.7,
         max_tokens: int = 1024,
+        model: Optional[str] = None,
     ) -> dict:
         """
         Submit an LLM request and wait for the result.
@@ -135,6 +137,7 @@ class LLMScheduler:
             priority: Request priority level
             temperature: Sampling temperature
             max_tokens: Max tokens to generate
+            model: Override model name (defaults to settings.ollama_model)
 
         Returns:
             dict with 'response', 'tokens', 'duration_seconds'
@@ -160,6 +163,7 @@ class LLMScheduler:
             system_prompt=system_prompt,
             temperature=temperature,
             max_tokens=max_tokens,
+            model=model,
         )
 
         # Log to database
@@ -220,6 +224,7 @@ class LLMScheduler:
                     system_prompt=request.system_prompt,
                     temperature=request.temperature,
                     max_tokens=request.max_tokens,
+                    model=request.model,
                 )
 
                 request.result = result

@@ -209,6 +209,7 @@ class MailmanAgent(BaseAgent):
             priority=RequestPriority.HIGH,
             temperature=0.1,
             max_tokens=20,
+            model="llama3.2:3b",
         )
 
         response = result["response"].strip().upper()
